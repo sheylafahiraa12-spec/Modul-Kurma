@@ -492,7 +492,7 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
                   <div className="p-3 bg-white rounded-xl border border-slate-200 flex flex-col justify-center">
                     <span className="text-xs text-slate-500 font-semibold uppercase font-mono">Satuan Pendidikan</span>
-                    <strong className="text-slate-900 text-base">SMA / Madrasah Aliyah (MA)</strong>
+                    <strong className="text-slate-900 text-base">SMA/MA</strong>
                   </div>
                   <div className="p-3 bg-white rounded-xl border border-slate-200 flex flex-col justify-center">
                     <span className="text-xs text-slate-500 font-semibold uppercase font-mono">Mata Pelajaran & Fase</span>
