@@ -1,0 +1,6 @@
+{
+  "name": "E-Modul Kimia Kurma Kelas X",
+  "description": "E-Modul Kimia SMA/MA Kelas X Kurikulum Merdeka Terintegrasi Al-Qur'an dan Sains dengan tema - Kurma: Mukjizat Buah Surga berbasis Problem Based Learning (PBL).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
