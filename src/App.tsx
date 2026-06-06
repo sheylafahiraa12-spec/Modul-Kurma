@@ -3,7 +3,6 @@ import {
   BookOpen,
   Sparkles,
   FlaskConical,
-  ClipboardCheck,
   GraduationCap,
   Send,
   HelpCircle,
@@ -21,8 +20,155 @@ import {
   Flame,
   Check,
   ChevronDown,
-  Info
+  Info,
+  Play,
+  Pause,
+  Loader2,
+  Volume2
 } from "lucide-react";
+
+// Interactive Quranic Verse Murottal Audio Player
+function QuranAudioPlayer({ surah, ayat }: { surah: string; ayat: string }) {
+  const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [currentAyahIdx, setCurrentAyahIdx] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const getSurahNumber = (surahName: string): number => {
+    const name = surahName.toLowerCase();
+    if (name.includes("maryam")) return 19;
+    if (name.includes("ar-rad")) return 13;
+    if (name.includes("al-an'am")) return 6;
+    if (name.includes("abasa")) return 80;
+    return 1;
+  };
+
+  const getAyahNumbers = (ayatStr: string): number[] => {
+    if (ayatStr.includes("-")) {
+      const parts = ayatStr.split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parseInt(parts[1], 10);
+      const result: number[] = [];
+      for (let i = start; i <= end; i++) {
+        result.push(i);
+      }
+      return result;
+    }
+    return [parseInt(ayatStr, 10)];
+  };
+
+  const surahNum = getSurahNumber(surah);
+  const ayahs = getAyahNumbers(ayat);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [surah, ayat]);
+
+  const togglePlay = () => {
+    if (playing) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setPlaying(false);
+    } else {
+      playAyah(currentAyahIdx);
+    }
+  };
+
+  const playAyah = (index: number) => {
+    const ayahNum = ayahs[index];
+    const surahPad = String(surahNum).padStart(3, "0");
+    const ayahPad = String(ayahNum).padStart(3, "0");
+    const url = `https://everyayah.com/data/Alafasy_128kbps/${surahPad}${ayahPad}.mp3`;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    setLoading(true);
+
+    audio.play()
+      .then(() => {
+        setPlaying(true);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Gagal memutar audio:", err);
+        setPlaying(false);
+        setLoading(false);
+      });
+
+    audio.onended = () => {
+      if (index + 1 < ayahs.length) {
+        setCurrentAyahIdx(index + 1);
+        playAyah(index + 1);
+      } else {
+        setPlaying(false);
+        setCurrentAyahIdx(0);
+      }
+    };
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-3 p-2 px-3 mt-3 rounded-xl border border-amber-200/40 bg-amber-50/50 hover:bg-amber-100/40 transition-colors shadow-xs">
+      <div className="flex items-center gap-2.5">
+        <button
+          onClick={togglePlay}
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+            playing
+              ? "bg-emerald-800 text-white hover:bg-emerald-900"
+              : "bg-amber-700/10 hover:bg-amber-700/20 text-amber-900"
+          } focus:outline-none`}
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin text-amber-800" />
+          ) : playing ? (
+            <Pause className="w-4 h-4 fill-current text-white" />
+          ) : (
+            <Play className="w-4 h-4 fill-current text-amber-900 translate-x-[1px]" />
+          )}
+        </button>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-semibold text-slate-700 font-sans tracking-wide">
+            Murottal Al-Quran (Syeikh Mishary Alafasy)
+          </span>
+          <span className="text-[9px] text-slate-500 font-mono">
+            {playing ? `Mendengarkan ${surah}: ${ayahs[currentAyahIdx]}` : `Putar ${surah}: ${ayat}`}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Animated sound wave indicators */}
+        <div className="flex items-end gap-[2px] h-3">
+          <span
+            className={`w-[2px] bg-emerald-700 rounded-full transition-all duration-300 ${
+              playing ? "h-3 animate-pulse" : "h-1"
+            }`}
+          />
+          <span
+            className={`w-[2px] bg-emerald-700 rounded-full transition-all duration-300 ${
+              playing ? "h-1.5 animate-pulse delay-75" : "h-1"
+            }`}
+          />
+          <span
+            className={`w-[2px] bg-emerald-700 rounded-full transition-all duration-300 ${
+              playing ? "h-2.5 animate-pulse delay-150" : "h-1"
+            }`}
+          />
+        </div>
+        <Volume2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+      </div>
+    </div>
+  );
+}
 import {
   IDENTITAS_MODUL,
   LANDASAN_MODUL,
@@ -31,9 +177,6 @@ import {
   PERSPEKTIF_ISLAM_SAINS,
   KONSEP_KIMIA_KURMA,
   DATA_PROKSIMAT_KURMA,
-  PBL_PROBLEM_CASE,
-  SINTAKS_PBL,
-  LKPD_LIST,
   ASESMEN_SISTEM,
   SOAL_PILIHAN_GANDA,
   SOAL_ESSAY,
@@ -42,7 +185,7 @@ import {
 
 export default function App() {
   // Tab Navigation State
-  const [activeTab, setActiveTab] = useState<"beranda" | "bab1-2" | "bab3" | "simulator" | "pbl-lkpd" | "kuis" | "ai">("beranda");
+  const [activeTab, setActiveTab] = useState<"beranda" | "bab1-2" | "bab3" | "simulator" | "kuis" | "ai">("beranda");
 
   // AI Chat State
   const [chatInput, setChatInput] = useState("");
@@ -83,15 +226,7 @@ export default function App() {
   const [showEssayAnswer, setShowEssayAnswer] = useState<{ [key: number]: boolean }>({});
   const [essayGrades, setEssayGrades] = useState<{ [key: number]: number }>({});
 
-  // LKPD State
-  const [lkpdAnswers, setLkpdAnswers] = useState<{ [lkpdId: string]: { [qIdx: number]: string } }>({
-    "lkpd-1": { 0: "", 1: "" },
-    "lkpd-2": { 0: "", 1: "" },
-    "lkpd-3": { 0: "", 1: "" }
-  });
-  const [submittingLkpd, setSubmittingLkpd] = useState<{ [key: string]: boolean }>({});
-  const [submittedLkpd, setSubmittedLkpd] = useState<{ [key: string]: boolean }>({});
-  const [showLkpdFeedback, setShowLkpdFeedback] = useState<{ [lkpdId: string]: boolean }>({});
+
 
   // Trigger Chat from dynamic source (guided question buttons)
   const triggerAiResponse = async (question: string) => {
@@ -241,56 +376,7 @@ export default function App() {
     setScorePg(null);
   };
 
-  // LKPD Handler
-  const handleLkpdInputChange = (lkpdId: string, qIdx: number, val: string) => {
-    setLkpdAnswers({
-      ...lkpdAnswers,
-      [lkpdId]: {
-        ...lkpdAnswers[lkpdId],
-        [qIdx]: val
-      }
-    });
-  };
 
-  const submitLkpdAnswer = (lkpdId: string) => {
-    setSubmittingLkpd({ ...submittingLkpd, [lkpdId]: true });
-    setTimeout(() => {
-      setSubmittingLkpd({ ...submittingLkpd, [lkpdId]: false });
-      setSubmittedLkpd({ ...submittedLkpd, [lkpdId]: true });
-      setShowLkpdFeedback({ ...showLkpdFeedback, [lkpdId]: true });
-    }, 1500);
-  };
-
-  const downloadCompiledReport = (lkpdId: string) => {
-    const lkpdObj = LKPD_LIST.find((l) => l.id === lkpdId);
-    if (!lkpdObj) return;
-
-    const answers = lkpdAnswers[lkpdId];
-    let content = `=========================================================\n`;
-    content += ` LAPORAN JAWABAN LKPD DIGITAL - ELEKTRONIK MODUL KIMIA\n`;
-    content += ` TEMA: "Kurma: Mukjizat Buah Surga - Integrasi Islam & Sains"\n`;
-    content += `=========================================================\n\n`;
-    content += `Identitas LKPD: ${lkpdObj.judul}\n`;
-    content += `Tujuan Eksperimen: ${lkpdObj.tujuan}\n\n`;
-    content += `---------------- JAWABAN SISWA ----------------\n\n`;
-    
-    lkpdObj.pertanyaanHots.forEach((q, idx) => {
-      content += `Pertanyaan ${idx + 1}:\n${q.tanya}\n\n`;
-      content += `Jawaban Anda:\n${answers[idx] || "(Belum dijawab)"}\n\n`;
-      content += `Kunci Panduan Akademik Pelengkap:\n${q.panduanJawab}\n`;
-      content += `---------------------------------------------------------\n\n`;
-    });
-
-    content += `Dicetak otomatis melalui platform pembelajaran pintar AI E-Modul.`;
-
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Laporan_LKPD_${lkpdId}_KimiaKurma.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col antialiased">
@@ -407,21 +493,6 @@ export default function App() {
                   <span>Virtual Lab Simulator</span>
                 </button>
 
-                <button
-                  id="tab-pbl-lkpd"
-                  onClick={() => {
-                    setActiveTab("pbl-lkpd");
-                    window.scrollTo({ top: 300, behavior: "smooth" });
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    activeTab === "pbl-lkpd"
-                      ? "bg-emerald-900 text-white shadow-xs"
-                      : "text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  <ClipboardCheck className="w-5 h-5 shrink-0" />
-                  <span>Sintaks PBL & LKPD</span>
-                </button>
 
                 <button
                   id="tab-kuis"
@@ -662,6 +733,7 @@ export default function App() {
                       <p className="text-xs font-serif text-slate-800 italic leading-relaxed">
                         "{PENDAHULUAN.ayatQuran.terjemahan}" (<strong className="text-amber-900">{PENDAHULUAN.ayatQuran.surah}: {PENDAHULUAN.ayatQuran.ayat}</strong>)
                       </p>
+                      <QuranAudioPlayer surah={PENDAHULUAN.ayatQuran.surah} ayat={PENDAHULUAN.ayatQuran.ayat} />
                     </div>
                     <div className="mt-4 pt-3 border-t border-amber-200/60">
                       <strong className="text-xs text-amber-950 block uppercase tracking-wider mb-1">Tafsir Ilmiah Modern:</strong>
@@ -798,6 +870,7 @@ export default function App() {
                               <p className="text-[11px] text-slate-800 italic leading-relaxed">
                                 "...{k.ayatTerkait.terjemahan}"
                               </p>
+                              <QuranAudioPlayer surah={k.ayatTerkait.surah} ayat={k.ayatTerkait.ayat} />
                             </div>
                             <div className="mt-2.5 pt-2.5 border-t border-amber-200">
                               <p className="text-[10px] text-slate-600 leading-relaxed">
@@ -895,14 +968,14 @@ export default function App() {
                   <span>Bab I & II</span>
                 </button>
                 <button
-                  id="btn-goto-pbl"
+                  id="btn-goto-simulator"
                   onClick={() => {
-                    setActiveTab("pbl-lkpd");
+                    setActiveTab("simulator");
                     window.scrollTo({ top: 300, behavior: "smooth" });
                   }}
                   className="bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-sm px-5 py-3 rounded-xl flex items-center gap-1.5 transition-colors shadow-xs"
                 >
-                  <span>Mulai Sintaks PBL & LKPD</span>
+                  <span>Virtual Lab Simulator</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -1190,237 +1263,21 @@ export default function App() {
                   <span>Teori Seluler Bab III</span>
                 </button>
                 <button
-                  id="btn-goto-pbl-from-sim"
-                  onClick={() => {
-                    setActiveTab("pbl-lkpd");
-                    window.scrollTo({ top: 300, behavior: "smooth" });
-                  }}
-                  className="bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-sm px-5 py-3 rounded-xl flex items-center gap-1.5 shadow-xs"
-                >
-                  <span>Lanjutkan ke LKPD Interaktif</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: SINTAKS PBL & 3 LKPD INTERAKTIF */}
-          {activeTab === "pbl-lkpd" && (
-            <div className="space-y-12 animate-fade-in">
-              <div className="border-b border-slate-200 pb-4">
-                <span className="text-xs font-mono font-extrabold tracking-widest text-emerald-800 uppercase block">Kerangka Kurikulum Merdeka</span>
-                <h2 className="text-3xl font-extrabold text-slate-900 mt-1 font-serif">Alur Problem Based Learning & LKPD</h2>
-                <p className="text-slate-600 text-sm mt-1">
-                  Kaji studi kasus kontekstual Ramadan di bawah ini sesuai tuntutan 5 tahapan Problem Based Learning (PBL).
-                </p>
-              </div>
-
-              {/* Central Study Case box of Ramadan energy */}
-              <section id="pbl-main-case-study" className="bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200 rounded-3xl p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/40 rounded-full filter blur-2xl"></div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Brain className="w-6 h-6 text-amber-800" />
-                  <h3 className="font-serif font-extrabold text-lg text-amber-950">{PBL_PROBLEM_CASE.judul}</h3>
-                </div>
-                <p className="text-xs md:text-sm text-slate-800 leading-relaxed font-sans font-light">
-                  {PBL_PROBLEM_CASE.konteks}
-                </p>
-                <div className="mt-4 pt-4 border-t border-amber-200">
-                  <h4 className="font-semibold text-xs uppercase tracking-wide text-amber-950 mb-2">Pertanyaan Investigasi Pemantik Untuk Didiskusikan:</h4>
-                  <ul className="space-y-2">
-                    {PBL_PROBLEM_CASE.pertanyaanPemantik.map((p, idx) => (
-                      <li key={idx} className="flex gap-2 text-xs text-slate-700 leading-relaxed font-light">
-                        <span className="text-amber-800 font-extrabold">{idx + 1}.</span>
-                        <span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-
-              {/* Visualized PBL 5 Syntaxes inside expanders */}
-              <section id="pbl-syntaxes-section" className="space-y-3">
-                <h3 className="font-bold text-slate-900 text-base uppercase tracking-wider mb-4">5 Tahapan Problem Based Learning (PBL):</h3>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  {SINTAKS_PBL.map((step, idx) => (
-                    <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-between">
-                      <div>
-                        <strong className="text-xs text-emerald-950 font-bold block">{step.langkah}</strong>
-                        <span className="inline-block mt-1 px-1.5 py-0.5 text-[8.5px] bg-slate-200 text-slate-700 font-mono rounded font-semibold">{step.waktu}</span>
-                        <div className="mt-2.5 text-[10px] text-slate-600 leading-relaxed space-y-1 font-light">
-                          <p><strong>Aktivitas Guru:</strong> {step.aktivitasGuru}</p>
-                          <p><strong>Aktivitas Siswa:</strong> {step.aktivitasSiswa}</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-2.5 border-t border-slate-200 text-[9px] text-slate-500 font-mono">
-                        <span>Asesmen: {step.asesmen}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* 3 Interactive LKPD Worksheets */}
-              <section id="interactive-lkpd-worksheets" className="space-y-8 border-t border-slate-200 pt-8">
-                <div>
-                  <h3 className="font-extrabold text-2xl text-slate-900 font-serif">Lembar Kerja Peserta Didik (LKPD) Interaktif</h3>
-                  <p className="text-slate-600 text-xs md:text-sm">Isilah LKPD di bawah ini secara mandiri atau bersama kelompok Anda. Jawaban dapat diunduh untuk dikumpulkan!</p>
-                </div>
-
-                <div className="space-y-6">
-                  {LKPD_LIST.map((lkpd) => {
-                    const answers = lkpdAnswers[lkpd.id];
-                    const isSubmitted = submittedLkpd[lkpd.id];
-                    const showFeedback = showLkpdFeedback[lkpd.id];
-
-                    // Count questions answered
-                    const answeredCount = Object.values(answers).filter(Boolean).length;
-                    const completionPercent = (answeredCount / lkpd.pertanyaanHots.length) * 100;
-
-                    return (
-                      <div key={lkpd.id} className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs hover:border-emerald-700/30 transition-all">
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-100 pb-3 gap-2">
-                          <h4 className="font-bold text-slate-900 text-base md:text-lg font-serif">{lkpd.judul}</h4>
-                          <span className="text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                            Kemajuan: {answeredCount}/{lkpd.pertanyaanHots.length}
-                          </span>
-                        </div>
-
-                        {/* LKPD Goal & Equipment meta */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-light tracking-wide">
-                          <div className="p-3 bg-slate-50 text-slate-700 rounded-xl leading-relaxed">
-                            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-widest block font-mono">Tujuan Eksperimen:</span>
-                            {lkpd.tujuan}
-                          </div>
-                          <div className="p-3 bg-slate-50 text-slate-700 rounded-xl leading-relaxed">
-                            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-widest block font-mono">Bahan & Peralatan Terkait:</span>
-                            {lkpd.alatBahan}
-                          </div>
-                        </div>
-
-                        {/* Procedure detail */}
-                        <div className="p-4 bg-emerald-950 text-emerald-100/90 rounded-2xl">
-                          <strong className="text-xs text-amber-400 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                            <FlaskConical className="w-4 h-4 shrink-0" /> Prosedur Langkah Kerja Eksperimen:
-                          </strong>
-                          <ol className="list-decimal list-inside space-y-1 text-xs font-light">
-                            {lkpd.prosedur.map((step, sIdx) => (
-                              <li key={sIdx}>{step}</li>
-                            ))}
-                          </ol>
-                        </div>
-
-                        {/* Interactive Questionnaire */}
-                        <div className="space-y-5">
-                          <h5 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Pertanyaan Analitik & HOTS:</h5>
-                          {lkpd.pertanyaanHots.map((q, idx) => (
-                            <div key={idx} className="space-y-2 border-l-4 border-slate-300 pl-4">
-                              <p className="text-xs font-medium text-slate-900 font-sans">{idx + 1}. {q.tanya}</p>
-                              
-                              <textarea
-                                value={answers[idx] || ""}
-                                onChange={(e) => handleLkpdInputChange(lkpd.id, idx, e.target.value)}
-                                disabled={isSubmitted}
-                                placeholder="Ketik hasil analisis kimiawi dan argumen teologis Anda di sini..."
-                                className="w-full text-xs font-light p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent min-h-[90px] text-slate-800 bg-white leading-relaxed"
-                              />
-
-                              {/* Correct Answers / Key guides visible upon submission only */}
-                              {showFeedback && (
-                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] leading-relaxed text-amber-950 font-serif">
-                                  <strong className="text-amber-900 uppercase tracking-wider block text-[10px] mb-1">Panduan Akademis (Kunci):</strong>
-                                  <p className="font-light italic">{q.panduanJawab}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Completion / Actions Block */}
-                        <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                          <div className="w-full sm:w-1/2 flex items-center gap-2">
-                            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                              <div className="bg-emerald-900 h-full transition-all duration-500" style={{ width: `${completionPercent}%` }}></div>
-                            </div>
-                            <span className="text-[11px] text-slate-500 font-mono shrink-0">{Math.round(completionPercent)}%</span>
-                          </div>
-
-                          <div className="flex gap-2 w-full sm:w-auto">
-                            {!isSubmitted ? (
-                              <button
-                                onClick={() => submitLkpdAnswer(lkpd.id)}
-                                disabled={submittingLkpd[lkpd.id]}
-                                className="w-full sm:w-auto bg-emerald-800 hover:bg-emerald-950 text-white font-semibold text-xs py-2 px-4 rounded-xl transition-colors shrink-0 disabled:bg-slate-300 cursor-pointer"
-                              >
-                                {submittingLkpd[lkpd.id] ? "Menyimpan..." : "Kirim Bahan LKPD"}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  // Toggle solutions
-                                  setShowLkpdFeedback({ ...showLkpdFeedback, [lkpd.id]: !showFeedback });
-                                }}
-                                className="w-full sm:w-auto border border-emerald-800 text-emerald-800 font-medium text-xs py-2 px-3 rounded-xl hover:bg-emerald-50 transition-colors"
-                              >
-                                {showFeedback ? "Sembunyikan Pembahasan" : "Lihat Kunci Pembahasan"}
-                              </button>
-                            )}
-
-                            {isSubmitted && (
-                              <button
-                                onClick={() => downloadCompiledReport(lkpd.id)}
-                                className="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                              >
-                                <span>Unduh PDF (.txt)</span>
-                                <Download className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Award Badge if 100% completed */}
-                        {isSubmitted && (
-                          <div className="p-3 bg-emerald-50 text-emerald-950 border border-emerald-100 rounded-2xl flex items-center gap-3 animate-pulse">
-                            <Award className="w-6 h-6 text-yellow-600 shrink-0" />
-                            <div>
-                              <strong className="text-xs block font-bold">Lencana Kompetensi Diperoleh!</strong>
-                              <span className="text-[10px] text-slate-600 leading-relaxed font-light">Siswa telah melengkapi investigasi kandungan secara akademis sesuai kaidah Kurikulum Merdeka.</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <div className="flex justify-between pt-4 border-t border-slate-100">
-                <button
-                  id="btn-back-to-sim"
-                  onClick={() => {
-                    setActiveTab("simulator");
-                    resetSimulatorTab();
-                    window.scrollTo({ top: 300, behavior: "smooth" });
-                  }}
-                  className="border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5"
-                >
-                  <Undo2 className="w-4 h-4" />
-                  <span>Lab Virtual</span>
-                </button>
-                <button
                   id="btn-goto-kuis"
                   onClick={() => {
                     setActiveTab("kuis");
                     window.scrollTo({ top: 300, behavior: "smooth" });
                   }}
-                  className="bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-sm px-5 py-3 rounded-xl flex items-center gap-1.5 shadow-xs"
+                  className="bg-emerald-800 hover:bg-emerald-950 text-white font-semibold text-sm px-5 py-3 rounded-xl flex items-center gap-1.5 shadow-xs"
                 >
-                  <span>Mulai Uji Mandiri & Kuis HOTS</span>
+                  <span>Lanjutkan ke Kuis HOTS</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           )}
+
+
 
           {/* TAB 6: ASESMEN & KUIS HOTS */}
           {activeTab === "kuis" && (
@@ -1636,15 +1493,15 @@ export default function App() {
 
               <div className="flex justify-start">
                 <button
-                  id="btn-back-to-pbl"
+                  id="btn-back-to-simulator"
                   onClick={() => {
-                    setActiveTab("pbl-lkpd");
+                    setActiveTab("simulator");
                     window.scrollTo({ top: 300, behavior: "smooth" });
                   }}
                   className="border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center gap-1.5"
                 >
                   <Undo2 className="w-4 h-4" />
-                  <span>Sintaks & LKPD</span>
+                  <span>Virtual Lab Simulator</span>
                 </button>
               </div>
             </div>
